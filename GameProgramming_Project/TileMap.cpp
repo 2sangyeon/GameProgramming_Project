@@ -56,6 +56,7 @@ void TileMap::Render(SDL_Renderer* renderer,
     if (tiles.empty())
         return;
 
+    // 나중에 적용방식 바꿔야함
     const float lightRadius = 10000.0f;
 
     int startCol = static_cast<int>(camera.GetX()) / TILE_SIZE;
