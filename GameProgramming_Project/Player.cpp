@@ -1,17 +1,37 @@
 #include "Player.h"
+#include <SDL_image.h>
+#include <cmath>
 
 void Player::Update(float dt, const InputManager& input, const TileMap& tileMap)
 {
 	HandleInput(input);
 	UpdateMovement(dt, tileMap);
+
+    AnimState prevState = currentState;
+    UpdateAnimationState();
+    if (prevState != currentState)
+    {
+        currentFrame = 0;
+        animationTimer = 0.0f;
+    }
+
+    UpdateAnimationFrame(dt);
 }
 
 void Player::HandleInput(const InputManager& input)
 {
     vel.x = 0.0f;
 
-    if (input.ActionHeld(Action::MoveLeft)) vel.x -= speed;
-    if (input.ActionHeld(Action::MoveRight)) vel.x += speed;
+    if (input.ActionHeld(Action::MoveLeft))
+    {
+        vel.x -= speed;
+        facingRight = false;
+    }
+    if (input.ActionHeld(Action::MoveRight))
+    {
+        vel.x += speed;
+        facingRight = true;
+    }
     if (input.ActionPressed(Action::Jump)) jumpBufferTimer = jumpBufferTime;
     // 점프키를 빨리 떼면 낮게 점프
     if (input.KeyReleased(SDL_SCANCODE_SPACE) && vel.y < 0.0f) vel.y *= jumpCutMultiplier;
@@ -46,9 +66,50 @@ void Player::UpdateMovement(float dt, const TileMap& tileMap)
 // 플레이어 캐릭터 렌더링
 void Player::Render(SDL_Renderer* renderer, const Camera2D& camera)
 {
-    SDL_Rect rect = camera.WorldToScreen(GetRect());
-    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-    SDL_RenderFillRect(renderer, &rect);
+    SDL_Rect playerRect = GetRect();
+    SDL_Rect dstRect = camera.WorldToScreen(playerRect);
+    /*SDL_Rect dstRect =
+    {
+        static_cast<int>(pos.x + renderOffsetX - camera.GetX()),
+        static_cast<int>(pos.y + renderOffsetY - camera.GetY()),
+        renderWidth,
+        renderHeight
+    };*/
+
+    // 스프라이트가 아직 로드 안 됐으면 기존 빨간 사각형으로 표시
+    if (!spriteSheet)
+    {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &dstRect);
+        return;
+    }
+
+    int row = 0;
+
+    switch (currentState)
+    {
+    case AnimState::Idle:
+        row = 0;
+        break;
+    case AnimState::Run:
+        row = 1;
+        break;
+    case AnimState::Jump:
+        row = 2;
+        break;
+    }
+
+    SDL_Rect srcRect =
+    {
+        currentFrame * FRAME_WIDTH,
+        row * FRAME_HEIGHT,
+        FRAME_WIDTH,
+        FRAME_HEIGHT
+    };
+
+    SDL_RendererFlip flip = facingRight ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
+
+    SDL_RenderCopyEx(renderer, spriteSheet, &srcRect, &dstRect, 0.0, nullptr, flip);
 }
 
 SDL_Rect Player::GetRect() const
@@ -150,6 +211,24 @@ void Player::ResolveCollisionY(const TileMap& tileMap)
             }
         }
     }
+
+    // 발밑 타일 검사: 바닥에 딱 붙어 있을 때 isOnGround가 흔들리는 문제 방지
+    SDL_Rect footRect = GetRect();
+    int footY = footRect.y + footRect.h + 1;
+
+    int footLeftTile = footRect.x / TILE_SIZE;
+    int footRightTile = (footRect.x + footRect.w - 1) / TILE_SIZE;
+    int footRow = footY / TILE_SIZE;
+
+    for (int col = footLeftTile; col <= footRightTile; col++)
+    {
+        if (tileMap.IsSolidTile(footRow, col))
+        {
+            isOnGround = true;
+            jumpCount = 0;
+            break;
+        }
+    }
 }
 
 float Player::GetCenterX() const
@@ -160,4 +239,47 @@ float Player::GetCenterX() const
 float Player::GetCenterY() const
 {
     return pos.y + height * 0.5f;
+}
+
+bool Player::LoadSprite(SDL_Renderer* renderer,
+    const char* path)
+{
+    SDL_Surface* surface = IMG_Load(path);
+
+    if (!surface)
+        return false;
+
+    spriteSheet = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    return spriteSheet != nullptr;
+}
+
+void Player::UpdateAnimationState()
+{
+    if (!isOnGround)
+    {
+        if (vel.y < 0)
+            currentState = AnimState::Jump;
+    }
+    else
+    {
+        if (fabs(vel.x) > 1.0f)
+            currentState = AnimState::Run;
+        else
+            currentState = AnimState::Idle;
+    }
+}
+
+void Player::UpdateAnimationFrame(float dt)
+{
+    animationTimer += dt;
+    if (animationTimer >= frameDuration)
+    {
+        animationTimer = 0.0f;
+        currentFrame++;
+        int maxFrames = 4; // 각 상태별 프레임 수 (예시)
+        if (currentFrame >= maxFrames)
+            currentFrame = 0;
+    }
 }

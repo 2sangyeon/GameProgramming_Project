@@ -33,16 +33,30 @@ bool Game::Initialize()
         return false;
     }
 
-    // 타일셋 로드
+    // 배경 로드
+    if (!backGround.Load(renderer, "assets/backgrounds/bg2.png"))
+    {
+        std::cout << "Failed to load background\n";
+        return false;
+    }
+
+    // 타일맵 로드
     if (!tileMap.LoadMap("assets/maps/Test_map.tmj"))
     {
         std::cout << "Failed to load map\n";
         return false;
     }
 
+    // 타일셋 로드
     if (!tileMap.LoadTileset(renderer, "assets/tilesets/first_tile_32x32.png"))
     {
         std::cout << "Failed to load tileset\n";
+        return false;
+    }
+
+    if (!player.LoadSprite(renderer, "assets/sprites/player_spritesheet3.png"))
+    {
+        std::cout << "Failed to load player sprite\n";
         return false;
     }
 
@@ -164,10 +178,17 @@ void Game::Render()
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
+    // 1. 배경 (Parallax)
+    backGround.Render(renderer, camera);
+
+    // 2. 죽은 위치 + 플레이어 주변 시야 계산
     std::vector<Vec2> visiblePoints = deathLights;
     visiblePoints.push_back({ player.GetCenterX(), player.GetCenterY() });
 
+    // 3. 타일맵
     tileMap.Render(renderer, camera, visiblePoints);
+
+    // 4. 플레이어
     player.Render(renderer, camera);
 
     SDL_RenderPresent(renderer);

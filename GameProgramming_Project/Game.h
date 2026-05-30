@@ -4,6 +4,7 @@
 #include <vector>
 #include "Player.h"
 #include "TileMap.h"
+#include "BackGround.h"
 #include "InputManager.h"
 #include "Timer.h"
 #include "Vec2.h"
@@ -28,9 +29,10 @@ private:
 	SDL_Renderer* renderer = nullptr;
 	bool isRunning = false;
 
-	Player player;
 	Timer timer;
+	Player player;
 	TileMap tileMap;
+	BackGround backGround;
 	InputManager input;
 	Camera2D camera;
 	std::vector<Vec2> deathLights;

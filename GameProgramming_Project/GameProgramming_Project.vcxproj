@@ -125,6 +125,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BackGround.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameProgramming_Project.cpp" />
@@ -134,6 +135,7 @@
     <ClCompile Include="TileMap.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BackGround.h" />
     <ClInclude Include="Camera2D.h" />
     <ClInclude Include="Constants.h" />
     <ClInclude Include="Game.h" />
