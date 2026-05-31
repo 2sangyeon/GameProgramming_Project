@@ -33,12 +33,13 @@ private:
 	void ResolveCollisionX(const TileMap& tileMap);
 	void ResolveCollisionY(const TileMap& tileMap);
 	SDL_Rect GetRect() const;
+	SDL_Rect GetHitbox() const;
 
-	Vec2 pos = { 100.0f,100.0f };
+	Vec2 pos = { 300.0f,200.0f };
 	Vec2 vel = { 0.0f,0.0f };
 
 	// 물리 관련 변수
-	float gravity = 700.0f;
+	float gravity = 980.0f;
 	float jumpForce = -500.0f;
 	float speed = 200.0f;
 
@@ -46,10 +47,10 @@ private:
 	int width = 32;
 	int height = 32;
 
-	int renderWidth = 64;
-	int renderHeight = 64;
-	int renderOffsetX = -16;
-	int renderOffsetY = -32;
+	/*int renderWidth = 32;
+	int renderHeight = 32;
+	int renderOffsetX = -8;
+	int renderOffsetY = -4;*/
 	
 	// 땅에 닿아있는지 체크
 	bool isOnGround = true;

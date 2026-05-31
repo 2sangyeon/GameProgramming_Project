@@ -16,6 +16,8 @@ public:
     float GetX() const;
     float GetY() const;
 
+    float GetZoom() const;
+
 private:
     float x = 0.0f;
     float y = 0.0f;
@@ -24,4 +26,7 @@ private:
     int screenH = SCREEN_HEIGHT;
 
     float smoothing = 2.0f;
+
+    // 카메라 확대 배율
+    float zoom = 2.0f;
 };

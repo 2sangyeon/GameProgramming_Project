@@ -54,7 +54,8 @@ void Player::UpdateMovement(float dt, const TileMap& tileMap)
         jumpCount++;
     }
 
-    vel.y += gravity * dt;
+    if (vel.y > 0.0f) vel.y += gravity * 1.8f * dt;
+    else vel.y += gravity * dt;
 
     pos.x += vel.x * dt;
     ResolveCollisionX(tileMap);
@@ -120,11 +121,33 @@ SDL_Rect Player::GetRect() const
         width,
         height
     };
+    /*
+    // 충돌 범위와 렌더링 범위 분리
+    const int shrinkX = 6;
+    const int shrinkTop = 4;
+    const int shrinkBottom = 0;
+
+    return {
+        static_cast<int>(pos.x) + shrinkX,
+        static_cast<int>(pos.y) + shrinkTop,
+        width - shrinkX * 2,
+        height - shrinkTop - shrinkBottom
+    };*/
+}
+
+SDL_Rect Player::GetHitbox() const
+{
+    return {
+        static_cast<int>(pos.x) + 6,
+        static_cast<int>(pos.y) + 4,
+        20,
+        28
+    };
 }
 
 void Player::ResolveCollisionX(const TileMap& tileMap)
 {
-    SDL_Rect playerRect = GetRect();
+    SDL_Rect playerRect = GetHitbox();
 
     int leftTile = playerRect.x / TILE_SIZE;
     int rightTile = (playerRect.x + playerRect.w - 1) / TILE_SIZE;
@@ -151,11 +174,11 @@ void Player::ResolveCollisionX(const TileMap& tileMap)
             {
                 if (vel.x > 0.0f)
                 {
-                    pos.x = static_cast<float>(tileRect.x - width);
+                    pos.x = static_cast<float>(tileRect.x - (6 + 20));
                 }
                 else if (vel.x < 0.0f)
                 {
-                    pos.x = static_cast<float>(tileRect.x + tileRect.w);
+                    pos.x = static_cast<float>(tileRect.x + tileRect.w - 6);
                 }
 
                 vel.x = 0.0f;
@@ -169,7 +192,7 @@ void Player::ResolveCollisionY(const TileMap& tileMap)
 {
     isOnGround = false;
 
-    SDL_Rect playerRect = GetRect();
+    SDL_Rect playerRect = GetHitbox();
 
     int leftTile = playerRect.x / TILE_SIZE;
     int rightTile = (playerRect.x + playerRect.w - 1) / TILE_SIZE;
@@ -196,14 +219,14 @@ void Player::ResolveCollisionY(const TileMap& tileMap)
             {
                 if (vel.y > 0.0f)
                 {
-                    pos.y = static_cast<float>(tileRect.y - height);
+                    pos.y = static_cast<float>(tileRect.y - (4 + 28));
                     vel.y = 0.0f;
                     isOnGround = true;
                     jumpCount = 0;
                 }
                 else if (vel.y < 0.0f)
                 {
-                    pos.y = static_cast<float>(tileRect.y + tileRect.h);
+                    pos.y = static_cast<float>(tileRect.y + tileRect.h - 4);
                     vel.y = 0.0f;
                 }
 

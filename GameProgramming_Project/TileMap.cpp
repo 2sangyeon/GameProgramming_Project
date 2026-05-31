@@ -57,13 +57,16 @@ void TileMap::Render(SDL_Renderer* renderer,
         return;
 
     // 나중에 적용방식 바꿔야함
-    const float lightRadius = 10000.0f;
+    const float lightRadius = 100.0f;
+
+    float viewWidth = SCREEN_WIDTH / camera.GetZoom();
+    float viewHeight = SCREEN_HEIGHT / camera.GetZoom();
 
     int startCol = static_cast<int>(camera.GetX()) / TILE_SIZE;
-    int endCol = static_cast<int>(camera.GetX() + SCREEN_WIDTH) / TILE_SIZE;
+    int endCol = static_cast<int>(camera.GetX() + viewWidth) / TILE_SIZE;
 
     int startRow = static_cast<int>(camera.GetY()) / TILE_SIZE;
-    int endRow = static_cast<int>(camera.GetY() + SCREEN_HEIGHT) / TILE_SIZE;
+    int endRow = static_cast<int>(camera.GetY() + viewHeight) / TILE_SIZE;
 
     if (startCol < 0) startCol = 0;
     if (startRow < 0) startRow = 0;
@@ -78,8 +81,14 @@ void TileMap::Render(SDL_Renderer* renderer,
             if (index < 0 || index >= static_cast<int>(tiles.size()))
                 continue;
 
-            int tileID = tiles[index];
-            if (tileID == 0) continue;
+            int gid = tiles[index];
+
+            // Tiled에서 0은 빈칸
+            if (gid == 0)
+                continue;
+
+            // Tiled의 gid 1~6을 실제 srcRect용 tileID 0~5로 변환
+            int tileID = gid - 1;
 
             float tileCenterX = col * TILE_SIZE + TILE_SIZE * 0.5f;
             float tileCenterY = row * TILE_SIZE + TILE_SIZE * 0.5f;
@@ -100,17 +109,25 @@ void TileMap::Render(SDL_Renderer* renderer,
 
             if (!visibleByLight) continue;
 
-            SDL_Rect dstRect =
+            SDL_Rect worldRect =
             {
-                col * TILE_SIZE - static_cast<int>(camera.GetX()),
-                row * TILE_SIZE - static_cast<int>(camera.GetY()),
+                col * TILE_SIZE,
+                row * TILE_SIZE,
                 TILE_SIZE,
                 TILE_SIZE
             };
 
+            SDL_Rect dstRect = camera.WorldToScreen(worldRect);
+
             if (tileTexture)
             {
-                SDL_Rect srcRect = { 0, 0, 32, 32 };
+                SDL_Rect srcRect =
+                {
+                    tileID * TILE_SIZE,
+                    0,
+                    TILE_SIZE,
+                    TILE_SIZE
+                };
 
                 if (SDL_RenderCopy(renderer, tileTexture, &srcRect, &dstRect) != 0)
                 {

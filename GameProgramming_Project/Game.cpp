@@ -33,6 +33,9 @@ bool Game::Initialize()
         return false;
     }
 
+	// 전체화면 적용 시 논리적 크기 설정으로 해상도 독립적 렌더링
+    SDL_RenderSetLogicalSize(renderer, SCREEN_WIDTH, SCREEN_HEIGHT);
+
     // 배경 로드
     if (!backGround.Load(renderer, "assets/backgrounds/bg2.png"))
     {
@@ -48,7 +51,7 @@ bool Game::Initialize()
     }
 
     // 타일셋 로드
-    if (!tileMap.LoadTileset(renderer, "assets/tilesets/first_tile_32x32.png"))
+    if (!tileMap.LoadTileset(renderer, "assets/tilesets/tileset_6tiles_192x32.png"))
     {
         std::cout << "Failed to load tileset\n";
         return false;
