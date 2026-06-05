@@ -28,5 +28,5 @@ private:
     float smoothing = 2.0f;
 
     // 카메라 확대 배율
-    float zoom = 2.0f;
+    float zoom = 1.4f;
 };

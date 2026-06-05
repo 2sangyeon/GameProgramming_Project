@@ -52,6 +52,8 @@ void Player::UpdateMovement(float dt, const TileMap& tileMap)
         jumpBufferTimer = 0.0f;
 
         jumpCount++;
+
+        if (jumpSound) Mix_PlayChannel(-1, jumpSound, 0);
     }
 
     if (vel.y > 0.0f) vel.y += gravity * 1.8f * dt;
@@ -59,6 +61,18 @@ void Player::UpdateMovement(float dt, const TileMap& tileMap)
 
     pos.x += vel.x * dt;
     ResolveCollisionX(tileMap);
+
+    // 벽 슬라이드
+    if (isTouchingWall && !wasTouchingWall && !isOnGround)
+    {
+        jumpCount = 0;
+    }
+    wasTouchingWall = isTouchingWall;
+
+    if (isTouchingWall && !isOnGround && vel.y > WALL_SLIDE_SPEED)
+    {
+        vel.y = WALL_SLIDE_SPEED;
+    }
 
     pos.y += vel.y * dt;
     ResolveCollisionY(tileMap);
@@ -69,21 +83,6 @@ void Player::Render(SDL_Renderer* renderer, const Camera2D& camera)
 {
     SDL_Rect playerRect = GetRect();
     SDL_Rect dstRect = camera.WorldToScreen(playerRect);
-    /*SDL_Rect dstRect =
-    {
-        static_cast<int>(pos.x + renderOffsetX - camera.GetX()),
-        static_cast<int>(pos.y + renderOffsetY - camera.GetY()),
-        renderWidth,
-        renderHeight
-    };*/
-
-    // 스프라이트가 아직 로드 안 됐으면 기존 빨간 사각형으로 표시
-    if (!spriteSheet)
-    {
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &dstRect);
-        return;
-    }
 
     int row = 0;
 
@@ -97,6 +96,9 @@ void Player::Render(SDL_Renderer* renderer, const Camera2D& camera)
         break;
     case AnimState::Jump:
         row = 2;
+        break;
+    case AnimState::Slide:
+        row = 3;
         break;
     }
 
@@ -121,18 +123,6 @@ SDL_Rect Player::GetRect() const
         width,
         height
     };
-    /*
-    // 충돌 범위와 렌더링 범위 분리
-    const int shrinkX = 6;
-    const int shrinkTop = 4;
-    const int shrinkBottom = 0;
-
-    return {
-        static_cast<int>(pos.x) + shrinkX,
-        static_cast<int>(pos.y) + shrinkTop,
-        width - shrinkX * 2,
-        height - shrinkTop - shrinkBottom
-    };*/
 }
 
 SDL_Rect Player::GetHitbox() const
@@ -147,6 +137,9 @@ SDL_Rect Player::GetHitbox() const
 
 void Player::ResolveCollisionX(const TileMap& tileMap)
 {
+    isTouchingWall = false;
+    wallDirection = 0;
+
     SDL_Rect playerRect = GetHitbox();
 
     int leftTile = playerRect.x / TILE_SIZE;
@@ -174,15 +167,24 @@ void Player::ResolveCollisionX(const TileMap& tileMap)
             {
                 if (vel.x > 0.0f)
                 {
+                    // 오른쪽 벽에 충돌
                     pos.x = static_cast<float>(tileRect.x - (6 + 20));
+
+                    isTouchingWall = true;
+                    wallDirection = 1;
+
                 }
                 else if (vel.x < 0.0f)
                 {
+                    // 왼쪽 벽에 충돌
                     pos.x = static_cast<float>(tileRect.x + tileRect.w - 6);
+
+                    isTouchingWall = true;
+                    wallDirection = -1;
                 }
 
                 vel.x = 0.0f;
-                playerRect = GetRect();
+                playerRect = GetHitbox();
             }
         }
     }
@@ -230,13 +232,13 @@ void Player::ResolveCollisionY(const TileMap& tileMap)
                     vel.y = 0.0f;
                 }
 
-                playerRect = GetRect();
+                playerRect = GetHitbox();
             }
         }
     }
 
     // 발밑 타일 검사: 바닥에 딱 붙어 있을 때 isOnGround가 흔들리는 문제 방지
-    SDL_Rect footRect = GetRect();
+    SDL_Rect footRect = GetHitbox();
     int footY = footRect.y + footRect.h + 1;
 
     int footLeftTile = footRect.x / TILE_SIZE;
@@ -269,8 +271,7 @@ bool Player::LoadSprite(SDL_Renderer* renderer,
 {
     SDL_Surface* surface = IMG_Load(path);
 
-    if (!surface)
-        return false;
+    if (!surface) return false;
 
     spriteSheet = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
@@ -282,7 +283,9 @@ void Player::UpdateAnimationState()
 {
     if (!isOnGround)
     {
-        if (vel.y < 0)
+        if (isTouchingWall)
+            currentState = AnimState::Slide;
+        else
             currentState = AnimState::Jump;
     }
     else
@@ -296,13 +299,61 @@ void Player::UpdateAnimationState()
 
 void Player::UpdateAnimationFrame(float dt)
 {
+    switch (currentState)
+    {
+    case AnimState::Idle:
+        frameDuration = 0.5f;
+        break;
+
+    case AnimState::Run:
+        frameDuration = 0.2f;
+        break;
+
+    case AnimState::Jump:
+        frameDuration = 0.5f;
+        break;
+    case AnimState::Slide:
+        frameDuration = 100.0f;
+        break;
+    }
+
     animationTimer += dt;
     if (animationTimer >= frameDuration)
     {
         animationTimer = 0.0f;
         currentFrame++;
-        int maxFrames = 4; // 각 상태별 프레임 수 (예시)
+        int maxFrames = 4; // 각 상태별 프레임 수
         if (currentFrame >= maxFrames)
             currentFrame = 0;
     }
+}
+
+bool Player::LoadJumpSound(const char* path)
+{
+    jumpSound = Mix_LoadWAV(path);
+
+    return jumpSound != nullptr;
+}
+
+void Player::Respawn(const Vec2& spawnPos)
+{
+    pos = spawnPos;
+    vel = { 0.0f, 0.0f };
+    isOnGround = false;
+    jumpCount = 0;
+    jumpBufferTimer = 0.0f;
+}
+
+Player::~Player()
+{
+    if (spriteSheet)
+    {
+        SDL_DestroyTexture(spriteSheet);
+        spriteSheet = nullptr;
+    }
+    if (jumpSound)
+    {
+        Mix_FreeChunk(jumpSound);
+        jumpSound = nullptr;
+	}
 }

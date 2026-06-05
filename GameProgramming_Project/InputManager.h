@@ -6,7 +6,10 @@ enum class Action
 {
     MoveLeft, 
     MoveRight, 
-    Jump
+    Jump,
+
+    Restart,
+    Quit
 };
 
 class InputManager

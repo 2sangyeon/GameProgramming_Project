@@ -76,10 +76,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\include;$(SolutionDir)\SDL2_image-2.8.12\include;$(solutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\lib\x64;$(SolutionDir)\SDL2_image-2.8.12\lib\x64;$(SolutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -90,10 +92,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\include;$(SolutionDir)\SDL2_image-2.8.12\include;$(solutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\lib\x64;$(SolutionDir)\SDL2_image-2.8.12\lib\x64;$(SolutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -102,12 +106,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\include;$(SolutionDir)\SDL2_image-2.8.12\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\include;$(SolutionDir)\SDL2_image-2.8.12\include;$(solutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\lib\x64;$(SolutionDir)\SDL2_image-2.8.12\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\lib\x64;$(SolutionDir)\SDL2_image-2.8.12\lib\x64;$(SolutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,17 +122,18 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\include;$(SolutionDir)\SDL2_image-2.8.12\include;$(solutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(SolutionDir)\SDL2-devel-2.32.4-VC\SDL2-2.32.4\lib\x64;$(SolutionDir)\SDL2_image-2.8.12\lib\x64;$(SolutionDir)\SDL2_mixer-devel-2.8.2-VC\SDL2_mixer-2.8.2\lib\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BackGround.cpp" />
     <ClCompile Include="Camera2D.cpp" />
     <ClCompile Include="Game.cpp" />
-    <ClCompile Include="GameProgramming_Project.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Player.cpp" />

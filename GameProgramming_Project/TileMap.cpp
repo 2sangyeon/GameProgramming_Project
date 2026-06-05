@@ -5,20 +5,84 @@
 
 using json = nlohmann::json;
 
-bool TileMap::IsSolidTile(int row, int col) const
+int TileMap::GetTileGID(int row, int col) const
 {
-    if (row < 0 || row >= MAP_ROWS || col < 0 || col >= MAP_COLS)
-        return false;
+    if (row < 0 || row >= mapRows || col < 0 || col >= mapCols)
+        return 0;
 
     int index = row * mapCols + col;
 
-    if (index < 0 || index >= tiles.size())
-        return false;
+    if (index < 0 || index >= static_cast<int>(tiles.size()))
+        return 0;
 
-    int tileID = tiles[index];
+    return tiles[index];
+}
 
-    return tileID != 0;
+bool TileMap::IsSolidTile(int row, int col) const
+{
+    int gid = GetTileGID(row, col);
 
+    // 1~6만 바닥/벽
+    return gid >= terrainFirstGID && gid <= terrainFirstGID + 5;
+}
+
+SDL_Rect TileMap::GetSpikeHitbox(int gid, int row, int col) const
+{
+    int localID = gid - spikeFirstGID;
+
+    int x = col * TILE_SIZE;
+    int y = row * TILE_SIZE;
+
+    switch (localID)
+    {
+        // 0~1: 위 가시
+    case 0:
+    case 1:
+        return { x, y + 16, 32, 16 };
+
+        // 2~3: 아래 가시
+    case 2:
+    case 3:
+        return { x, y, 32, 16 };
+
+        // 4~5: 왼쪽 가시
+    case 4:
+    case 5:
+        return { x + 16, y, 16, 32 };
+
+        // 6~7: 오른쪽 가시
+    case 6:
+    case 7:
+        return { x, y, 16, 32 };
+    }
+
+    return { x, y, 32, 32 };
+}
+
+bool TileMap::CheckSpikeCollision(const SDL_Rect& playerHitbox) const
+{
+    int leftTile = playerHitbox.x / TILE_SIZE;
+    int rightTile = (playerHitbox.x + playerHitbox.w - 1) / TILE_SIZE;
+    int topTile = playerHitbox.y / TILE_SIZE;
+    int bottomTile = (playerHitbox.y + playerHitbox.h - 1) / TILE_SIZE;
+
+    for (int row = topTile; row <= bottomTile; row++)
+    {
+        for (int col = leftTile; col <= rightTile; col++)
+        {
+            int gid = GetTileGID(row, col);
+
+            if (gid < spikeFirstGID || gid >= spikeFirstGID + spikeTileCount)
+                continue;
+
+            SDL_Rect spikeRect = GetSpikeHitbox(gid, row, col);
+
+            if (SDL_HasIntersection(&playerHitbox, &spikeRect))
+                return true;
+        }
+    }
+
+    return false;
 }
 
 bool TileMap::LoadMap(const char* path)
@@ -46,18 +110,20 @@ bool TileMap::LoadMap(const char* path)
         return false;
     }
 
+    // Tiled의 타일셋 firstgid 저장
+    terrainFirstGID = j["tilesets"][0]["firstgid"].get<int>();
+
+    if (j["tilesets"].size() >= 2)
+        spikeFirstGID = j["tilesets"][1]["firstgid"].get<int>();
+
     return true;
 }
 
 void TileMap::Render(SDL_Renderer* renderer,
-    const Camera2D& camera,
-    const std::vector<Vec2>& deathLights)
+    const Camera2D& camera)
 {
     if (tiles.empty())
         return;
-
-    // 나중에 적용방식 바꿔야함
-    const float lightRadius = 100.0f;
 
     float viewWidth = SCREEN_WIDTH / camera.GetZoom();
     float viewHeight = SCREEN_HEIGHT / camera.GetZoom();
@@ -87,28 +153,6 @@ void TileMap::Render(SDL_Renderer* renderer,
             if (gid == 0)
                 continue;
 
-            // Tiled의 gid 1~6을 실제 srcRect용 tileID 0~5로 변환
-            int tileID = gid - 1;
-
-            float tileCenterX = col * TILE_SIZE + TILE_SIZE * 0.5f;
-            float tileCenterY = row * TILE_SIZE + TILE_SIZE * 0.5f;
-
-            bool visibleByLight = false;
-
-            for (const Vec2& light : deathLights)
-            {
-                float dx = tileCenterX - light.x;
-                float dy = tileCenterY - light.y;
-
-                if (dx * dx + dy * dy <= lightRadius * lightRadius)
-                {
-                    visibleByLight = true;
-                    break;
-                }
-            }
-
-            if (!visibleByLight) continue;
-
             SDL_Rect worldRect =
             {
                 col * TILE_SIZE,
@@ -119,8 +163,10 @@ void TileMap::Render(SDL_Renderer* renderer,
 
             SDL_Rect dstRect = camera.WorldToScreen(worldRect);
 
-            if (tileTexture)
+            if (gid >= terrainFirstGID && gid < spikeFirstGID)
             {
+                int tileID = gid - terrainFirstGID;
+
                 SDL_Rect srcRect =
                 {
                     tileID * TILE_SIZE,
@@ -129,30 +175,32 @@ void TileMap::Render(SDL_Renderer* renderer,
                     TILE_SIZE
                 };
 
-                if (SDL_RenderCopy(renderer, tileTexture, &srcRect, &dstRect) != 0)
-                {
-                    SDL_Log("RenderCopy failed: %s", SDL_GetError());
-                }
-                /*if (tileID == 1) srcRect = {0, 0, 16, 16};
-                else if (tileID == 2) srcRect = { 16, 0, 16, 16 };
-                else srcRect = { 0, 0, 32, 32 };*/
+                SDL_RenderCopy(renderer, terrainTexture, &srcRect, &dstRect);
             }
-            else
+            else if (gid >= spikeFirstGID && gid < spikeFirstGID + spikeTileCount)
             {
-                SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-                SDL_RenderFillRect(renderer, &dstRect);
+                int tileID = gid - spikeFirstGID;
+
+                SDL_Rect srcRect =
+                {
+                    (tileID % 4) * TILE_SIZE,
+                    (tileID / 4) * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
+                };
+
+                SDL_RenderCopy(renderer, spikeTexture, &srcRect, &dstRect);
             }
         }
     }
 }
 
-bool TileMap::LoadTileset(SDL_Renderer* renderer,
-    const char* path)
+bool TileMap::LoadTerrainTileset(SDL_Renderer* renderer, const char* path)
 {
-    if (tileTexture)
+    if (terrainTexture)
     {
-        SDL_DestroyTexture(tileTexture);
-        tileTexture = nullptr;
+        SDL_DestroyTexture(terrainTexture);
+        terrainTexture = nullptr;
     }
 
     SDL_Surface* surface = IMG_Load(path);
@@ -163,10 +211,39 @@ bool TileMap::LoadTileset(SDL_Renderer* renderer,
         return false;
     }
 
-    tileTexture = SDL_CreateTextureFromSurface(renderer, surface);
+    terrainTexture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
-    if (!tileTexture)
+    if (!terrainTexture)
+    {
+        SDL_Log("CreateTexture failed: %s", SDL_GetError());
+        return false;
+    }
+    SDL_Log("spikeFirstGID = %d", spikeFirstGID);
+
+    return true;
+}
+
+bool TileMap::LoadSpikeTileset(SDL_Renderer* renderer, const char* path)
+{
+    if (spikeTexture)
+    {
+        SDL_DestroyTexture(spikeTexture);
+        spikeTexture = nullptr;
+    }
+
+    SDL_Surface* surface = IMG_Load(path);
+
+    if (!surface)
+    {
+        SDL_Log("IMG_Load failed: [%s], %s", path, IMG_GetError());
+        return false;
+    }
+
+    spikeTexture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+
+    if (!spikeTexture)
     {
         SDL_Log("CreateTexture failed: %s", SDL_GetError());
         return false;
@@ -175,11 +252,26 @@ bool TileMap::LoadTileset(SDL_Renderer* renderer,
     return true;
 }
 
+int TileMap::GetMapWidthPixels() const 
+{ 
+    return mapCols * TILE_SIZE; 
+}
+
+int TileMap::GetMapHeightPixels() const 
+{ 
+    return mapRows * TILE_SIZE; 
+}
+
 TileMap::~TileMap()
 {
-    if (tileTexture)
+    if (terrainTexture)
     {
-        SDL_DestroyTexture(tileTexture);
-        tileTexture = nullptr;
+        SDL_DestroyTexture(terrainTexture);
+        terrainTexture = nullptr;
+    }
+    if (spikeTexture)
+    {
+        SDL_DestroyTexture(spikeTexture);
+        spikeTexture = nullptr;
     }
 }

@@ -18,11 +18,14 @@ void Camera2D::ClampToBounds(float mapWidth, float mapHeight)
     if (x < 0.0f) x = 0.0f;
     if (y < 0.0f) y = 0.0f;
 
-    if (x > mapWidth - screenW)
-        x = mapWidth - screenW;
+    float viewW = screenW / zoom;
+    float viewH = screenH / zoom;
 
-    if (y > mapHeight - screenH)
-        y = mapHeight - screenH;
+    if (x > mapWidth - viewW)
+        x = mapWidth - viewW;
+
+    if (y > mapHeight - viewH)
+        y = mapHeight - viewH;
 }
 
 SDL_Rect Camera2D::WorldToScreen(const SDL_Rect& worldRect) const

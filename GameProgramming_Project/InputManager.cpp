@@ -46,6 +46,10 @@ bool InputManager::ActionPressed(Action action) const
     {
     case Action::Jump:
         return KeyPressed(SDL_SCANCODE_SPACE);
+    case Action::Restart:
+		return KeyPressed(SDL_SCANCODE_R);
+    case Action::Quit:
+        return KeyPressed(SDL_SCANCODE_ESCAPE);
 
     default:
         return false;
